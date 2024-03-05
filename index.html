@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator sił</title>
+  <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script>
+  <script src="wizualizacje.js"></script>
+  <style>
+    table,
+    th,
+    td {
+      border: 1px solid;
+    }
+
+    th, td {
+      min-width: 10ch;
+      text-align: center;
+      padding: 1ch;
+    }
+
+    .inline {
+      display: inline-block;
+    }
+
+    #footer {
+      width: 100%;
+      text-align: center;
+      bottom: 0px;
+      position: fixed;
+    }
+  </style>
+  <script>
+    function rad(angle) {
+      return angle * Math.PI / 180;
+    }
+
+    function calculateComponentForces(force, angle = 90) {
+      const force_x = force * Math.cos(rad(angle));
+      const force_y = force * Math.sin(rad(angle));
+
+      return { x: force_x, y: force_y };
+    }
+
+    // https://en.wikipedia.org/wiki/Gaussian_elimination
+
+    const test_matrix = [
+      [2, 1, -1, 8],   // 2x + y -  z =  8
+      [-3, -1, 2, -11],  //-3x - y + 2z = -11
+      [-2, 1, 2, -3]    //-2x + y + 2z = -3
+    ];
+
+    const test_matrix_1 = [
+      [1, -1, 2, 2, 0],
+      [2, -2, 1, 0, 1],
+      [-1, 2, 1, -2, 1],
+      [2, -1, 4, 0, 2]
+    ];
+
+    const test_coefficients = [
+      [1, 1, 2], //  x +  y + 2z
+      [1, 1, 1], //  x +  y +  z
+      [2, 2, 2]  // 2x + 2y + 2z
+    ];
+
+    const test_free_terms = [
+      3, // = 3
+      1, // = 1
+      2  // = 2
+    ]
+
+    const test_free_terms_1 = [
+      3, // = 3
+      1, // = 1
+      5  // = 5
+    ]
+
+    const copy2DArray = array => array.map(function (arr) {
+      return arr.slice();
+    });
+
+    /*
+    format danych wejściowych (czy coś):
+          x=0  x=1  x=2
+    y=0 [ n1,  n2,  n3]
+    y=1 [ n4,  n5,  n6]
+    y=2 [ n7,  n8,  n9]
+    */
+    function eliminateElementFromMatrix(matrix, x = 0, y = 0) {
+      matrix = copy2DArray(matrix);
+      const firstElement = matrix[y][x];
+      for (let row_number = y + 1; row_number < matrix.length; row_number++) {
+        const multiplier = (-matrix[row_number][x]) / firstElement;
+        for (let column = x; column < matrix[0].length; column++) {
+          //matrix[row_number][column] = firstElement == 0 ? 0 : matrix[y][column] * multiplier + matrix[row_number][column];
+          matrix[row_number][column] = matrix[y][column] * multiplier + matrix[row_number][column];
+        }
+      }
+      return matrix;
+    }
+
+    // sprowadź macierz do postaci schodkowej
+    function transformMatrixToTriangularForm(matrix) {
+      matrix = copy2DArray(matrix);
+      for (let i = 0; i < matrix.length; i++) {
+        let column_offset = 0;
+        for (let column = 0; column < matrix[i].length; column++) {
+          if (matrix[i][column] == 0)
+            column_offset += 1;
+        }
+        matrix = eliminateElementFromMatrix(matrix, column_offset, i);
+      }
+      return matrix;
+    }
+
+    //oblicz rząd macierzy (ile schodków mają)
+    function triangularMatrixRank(matrix) {
+      let rank = matrix.length;
+      for (let row_number = 0; row_number < matrix.length; row_number++) {
+        const row = matrix[row_number];
+        let zeros = 0;
+        for (let column = 0; column < row.length; column++) {
+          if (row[column] == 0)
+            zeros++;
+        }
+        if (zeros == row.length)
+          rank -= 1;
+      }
+      return rank;
+    }
+
+    // rozwiąż układ równań, układ podany jest w postaci macierza współczynników oraz macierza wyrazów wolnych
+    /* 
+      [ 2  1 -1], [ 8 ]    2x + y -  z =  8
+      [-3 -1  2], [-11]    3x - y + 2z = -11
+      [-2  1  2], [-3 ]   -2x + y + 2z = -3
+    */
+    function solveSystemOfEquations(coefficients_matrix, free_terms_matrix) {
+      let extended_matrix = copy2DArray(coefficients_matrix);
+      extended_matrix.map((row, row_number) => {
+        row.push(free_terms_matrix[row_number]);
+      });
+
+      extended_matrix = transformMatrixToTriangularForm(extended_matrix);
+      coefficients_matrix = transformMatrixToTriangularForm(copy2DArray(coefficients_matrix));
+
+      //sprawdzanie, czy da się rozwiązać podany układ równań
+      const coefficient_matrix_rank = triangularMatrixRank(coefficients_matrix);
+      const extended_matrix_rank = triangularMatrixRank(extended_matrix);
+      const unknowns_count = coefficients_matrix[0].length;
+
+      if (coefficient_matrix_rank != extended_matrix_rank) {
+        console.error("Podany układ równań nie ma rozwiązań!");
+        return -1;
+      } else if (coefficient_matrix_rank < unknowns_count) {
+        console.log("Układ równań ma nieskończenie wiele rozwiązań.");
+        return 1;
+      }
+
+      //console.log(copy2DArray(extended_matrix));
+      extended_matrix = extended_matrix.reverse();
+      solutions = [];
+
+      for (let row_number = 0; row_number < extended_matrix.length; row_number++) {
+        let row = extended_matrix[row_number].reverse();
+        let number = row[0];
+        for (let column = 0; column < row_number; column++) {
+          number += row[column + 1] * solutions[column];
+        }
+        const multiplier = row[row_number + 1];
+
+        solutions.push((-number) / multiplier);
+      }
+      solutions = solutions.map(x => -x);
+      return solutions.reverse();
+    }
+  </script>
+</head>
+
+<body>
+  <div id="component_force_calculator">
+    <details>
+      <summary>
+        Kalkulator sił składowych
+      </summary>
+      <div class="inline">
+        Wartość siły F = <input type="number" id="cfc_force" value="0"> N<br>
+        Kąt (do osi X) &alpha; = <input type="number" min="0" max="360" value="90" id="cfc_angle">&deg;<br>
+        F<sub>x</sub> = <span id="force_x">0</span><br>
+        F<sub>y</sub> = <span id="force_y">0</span><br>
+        <input type="button" id="calculate_component_forces" value="Oblicz">
+      </div>
+      <div class="inline">
+        <object id="component_force_visualization" data="./img/angled_force.svg" width="100px" height="100px"></object>
+      </div>
+    </details>
+    <script>
+      document.getElementById("cfc_angle").addEventListener("change", e => {
+        const angle_value = document.getElementById("cfc_angle").value;
+        const visualization = document.getElementById("component_force_visualization").contentDocument;
+        visualization.getElementById("force").style.transform = `rotate(${angle_value - 90}deg)`;
+
+        const angle_visualization = visualization.getElementById("angle");
+        let d = angle_visualization.attributes.d.value.split(" ");
+
+        const r = 100;
+        let end_x = (Math.cos(rad(angle_value - 180)) * r) + 200;
+        let end_y = (Math.sin(rad(angle_value - 180)) * r) + 200;
+
+        if (angle_value < 180)
+          d[7] = 0;
+        else
+          d[7] = 1;
+
+        d[9] = end_x;
+        d[10] = end_y;
+
+        angle_visualization.attributes.d.value = d.join(" ");
+      });
+
+      document.getElementById("calculate_component_forces").addEventListener("click", e => {
+        const force = document.getElementById("cfc_force").value;
+        const angle = document.getElementById("cfc_angle").value;
+
+        const component_forces = calculateComponentForces(force, angle);
+
+        document.getElementById("force_x").innerText = component_forces.x.toFixed(2);
+        document.getElementById("force_y").innerText = component_forces.y.toFixed(2);
+      });
+    </script>
+  </div>
+  <div id="system_of_equations_calculator">
+    <details>
+      <summary>Kalkulator układów równań</summary>
+      hehehehe
+    </details>
+  </div>
+  <div id="reactive_force_calculator">
+    <h3>Kalkulator sił reakcyjnych</h3>
+    <details open>
+      <summary>JSON</summary>
+      <div  class="inline">
+        <textarea name="rfc_json_input" id="rfc_json_input" cols="30" rows="10">[{"name":"A","type":"unknown","distance":"2","components":{}},{"name":"1","type":"known","force":"100","angle":"90","distance":"1","components":{"x":6.123233995736766e-15,"y":100}},{"name":"2","type":"known","force":"200","angle":"270","distance":"2","components":{"x":-3.6739403974420595e-14,"y":-200}},{"name":"3","type":"known","force":"300","angle":"90","distance":"3","components":{"x":1.8369701987210297e-14,"y":300}},{"name":"B","type":"unknown","distance":"0","components":{}}]</textarea>
+      </div>
+      <div class="inline" style="vertical-align: top;">
+        <input id="rfc_json_add" type="button" value="Dodaj z JSON"><br>
+        <input id="rfc_json_get" type="button" value="Przetwórz na JSON">
+      </div>
+    </details>
+    <div>
+      Nazwa: F<sub><input type="text" id="rfc_name" value="1"></sub><br>
+      Wartość siły: <input type="number" id="rfc_force" value="100">N<br>
+      Kąt do osi X: <input type="number" id="rfc_angle" min="0" max="360" step="1" value="90">&deg;<br>
+      Odległość: <input type="number" id="rfc_distance" value="1">
+    </div>
+    <input id="rfc_add_force" type="button" value="Dodaj siłę">
+    <input id="rfc_add_support" type="button" value="Dodaj podporę">
+    <input id="rfc_add_moving_support" type="button" value="Dodaj ruchomą podporę">
+    <input type="button" value="Podaj wzory">
+    <input id="rfc_calculate" type="button" value="Oblicz">
+    <table>
+      <tr id="rfc_force_names">
+        <th>Siła</th>
+      </tr>
+      <tr id="rfc_forces">
+        <th>Wartość [N]</th>
+      </tr>
+      <tr id="rfc_angles">
+        <th>Kąt do osi X</th>
+      </tr>
+      <tr id="rfc_distances">
+        <th>Odległość</th>
+      </tr>
+      <tr id="rfc_component_forces">
+        <th>Siły wypadkowe</th>
+      </tr>
+    </table>
+    <div id="rfc_solution">
+      <div>
+        <u>Założenie:</u>
+        <ol>
+          <li>
+            &Sigma; Fi<sub>x</sub> = 0
+          </li>
+          <li>
+            &Sigma; Fi<sub>y</sub> = 0
+          </li>
+          <li>
+            &Sigma; M<sub>(?)</sub> = 0
+          </li>
+        </ol>
+      </div>
+      <!-- <div style="float: left;">
+        <u>Układ współrzędnych:</u><br>
+        y &uparrow; <br>
+        x &rightarrow; <br>
+        + &circlearrowleft; <br>
+        - &circlearrowright;
+      </div> -->
+      <!-- <div>
+        <u>Wzory:</u>
+        <ol>
+          <li>
+            
+          </li>
+        </ol>
+      </div> -->
+      <div id="rfc_error">
+
+      </div>
+    </div>
+    <script>
+      let forces = [];
+      let forces_count = 1;
+      let known_forces = [];
+      let unknown_forces = [];
+      let known_forces_count = 1;
+      let unknown_forces_count = 1;
+
+      function addForceToTable(name, type, force, angle, distance){
+        if(type === "unknown"){
+          force = "???";
+          angle = "???";
+        }
+
+        const name_data = document.createElement("td");
+        name_data.innerHTML = `${type === "known" ? "F" : "R"}<sub>${name}</sub>`;
+        document.getElementById("rfc_force_names").append(name_data);
+
+        const force_data = document.createElement("td");
+        force_data.innerHTML = `${force}N`;
+        document.getElementById("rfc_forces").append(force_data);
+
+        const angle_data = document.createElement("td");
+        angle_data.innerHTML = `${angle}&deg;`;
+        document.getElementById("rfc_angles").append(angle_data);
+
+        const distance_data = document.createElement("td");
+        distance_data.innerHTML = `${distance}m`;
+        document.getElementById("rfc_distances").append(distance_data);
+
+        if(type === "known"){
+          const components = calculateComponentForces(force, angle);
+
+          const components_data = document.createElement("td");
+          components_data.innerHTML = `F<sub>${name}x</sub> = ${components.x.toFixed(2)}<br>`
+            + `F<sub>${name}y</sub> = ${components.y.toFixed(2)}`;
+          document.getElementById("rfc_component_forces").append(components_data);
+        }else if(type === "unknown"){
+          const components_data = document.createElement("td");
+          components_data.innerHTML = `R<sub>${name}x</sub> = <span id="rfc_reaction_${name}_x">???</span><br>`
+            + `R<sub>${name}y</sub> = <span id="rfc_reaction_${name}_x">???</span>`;
+          document.getElementById("rfc_component_forces").append(components_data);
+        }
+      }
+
+      function addForcesFromJSON(){
+        const JSON_forces = JSON.parse(document.getElementById("rfc_json_input").value);
+
+        forces = JSON_forces;
+        unknown_forces = [];
+        known_forces = [];
+
+        JSON_forces.forEach((force, i) => {
+          addForceToTable(force.name, force.type, force.force, force.angle, force.distance);
+          if(force.type === "unknown")
+            unknown_forces.push(i);
+          else if(force.type === "known")
+            known_forces.push(i);
+        });
+      }
+
+      document.getElementById("rfc_json_add").addEventListener("click", e => {
+        addForcesFromJSON();
+      });
+
+      document.getElementById("rfc_add_force").addEventListener("click", e => {
+        const input_name = document.getElementById("rfc_name");
+        const name = input_name.value;
+        const input_force = document.getElementById("rfc_force");
+        const force = input_force.value;
+        const input_angle = document.getElementById("rfc_angle");
+        const angle = input_angle.value;
+        const input_distance = document.getElementById("rfc_distance");
+        const distance = input_distance.value;
+
+        addForceToTable(name, "known", force, angle, distance);
+
+        const components = calculateComponentForces(force, angle);
+
+        forces.push({
+          name: name,
+          type: "known",
+          force: force,
+          angle: angle,
+          distance: distance,
+          components: components
+        });
+
+        known_forces.push(forces.length - 1);
+        known_forces_count += 1;
+        input_name.value = known_forces_count;
+      });
+
+      document.getElementById("rfc_add_support").addEventListener("click", e => {
+        const name = "ABCDEFGHIJKLMNOPRSTQWXYZ"[unknown_forces_count - 1];
+        const input_distance = document.getElementById("rfc_distance");
+        const distance = input_distance.value;
+
+        addForceToTable(name, "unknown", "???", "???", distance);
+
+        forces.push({
+          name: name,
+          type: "unknown",
+          distance: distance,
+          components: {
+            x: undefined,
+            y: undefined
+          }
+        });
+
+        unknown_forces.push(forces.length - 1);
+        unknown_forces_count += 1;
+      });
+
+      function calculateReactionForces(){
+        let unknowns_x_matrix = [
+          []
+        ];
+        let unknowns_y_matrix = [
+          []
+        ];
+        let known_y = [0];
+        let known_x = [0];
+        //układanie równania pierwotnego: Σ Fiy = 0
+        unknowns_y_matrix.push(new Array(unknown_forces.length).fill(1));
+        unknowns_x_matrix.push(new Array(unknown_forces.length).fill(1));
+        forces.forEach(force => {
+          if(force.type === "known"){
+            known_y[0] -= force.components.y;
+            known_x[0] -= force.components.x;
+          }
+        });
+        //układanie równań z momentami Σ M(?) = 0
+        //dla osi Y
+        unknown_forces.slice(1).forEach((force_id, unknown_index) => {
+          const unknown_force = forces[force_id];
+          let unknown_y = new Array(unknown_forces.length).fill(0);
+          let unknown_x = new Array(unknown_forces.length).fill(0);
+          console.log("Liczenie dla punktu ", unknown_force.name);
+          
+          // kierunek ->
+          let distance = parseFloat(unknown_force.distance);
+          let torque_y = 0;
+          let torque_x = 0;
+          for(let i = force_id - 1; i > -1; i--){
+            const force = forces[i];
+            distance += parseFloat(force.distance);
+            if(force.type === "known"){
+              torque_y += force.components.y * distance;
+              torque_x += force.components.x * distance;
+            }else if(force.type === "unknown"){
+              unknown_y[unknown_forces.indexOf(force_id)] = distance * -1;
+              unknown_x[unknown_forces.indexOf(force_id)] = distance * -1;
+            }
+            
+            console.log(force.type, force.name, "d=", distance, "torqueY=", force.components.y * distance);
+            console.log(force.type, force.name, "d=", distance, "torqueX=", force.components.x * distance);
+          }
+
+          // <- kierunek
+          distance = parseFloat(unknown_force.distance);
+          for(let i = force_id + 1; i < forces.length; i++){
+            const force = forces[i];
+            if(force.type === "known"){
+              torque_y += force.components.y * distance * -1;
+              torque_x += force.components.x * distance * -1;
+            }else if(force.type === "unknown"){
+              unknown_y[unknown_forces.indexOf(force_id)] = distance;
+              unknown_x[unknown_forces.indexOf(force_id)] = distance;
+            }
+            
+            console.log(force.type, force.name, "d=", distance, "torqueY=", force.components.y * distance * -1);
+            console.log(force.type, force.name, "d=", distance, "torqueX=", force.components.x * distance * -1);
+            distance += parseFloat(force.distance);
+          }
+          console.log("overall torqueY=", torque_y);
+          console.log("overall torqueX=", torque_x);
+          unknowns_y_matrix.push(unknown_y);
+          unknowns_x_matrix.push(unknown_x);
+          known_y.push(torque_y);
+          known_x.push(torque_x);
+        });
+
+        console.log(unknowns_y_matrix);
+        console.log(unknowns_x_matrix);
+        console.log(known_y);
+        console.log(known_x);
+
+        console.log(solveSystemOfEquations(unknowns_y_matrix, known_y));
+        console.log(solveSystemOfEquations(unknowns_x_matrix, known_x));
+      }
+
+      document.getElementById("rfc_calculate").addEventListener("click", e => {
+        calculateReactionForces();
+      });
+
+      //addForcesFromJSON();
+      //calculateReactionForces();
+
+    </script>
+  </div>
+  <div id="footer">
+    &copy; Lijuminati 2024
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,21 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <g>
+    <path id="angle" style="fill: none; stroke-width: 5px; stroke: rgb(0, 255, 0);" d="M 100 200 A 100 100 0 0 1 200 100"></path>
+    <text style="font-size: 100px; white-space: pre;" x="540" y="315" dy="-132" dx="-410">α</text>
+  </g>
+  <g>
+    <line style="fill: rgb(216, 216, 216); stroke: rgb(0, 0, 0); stroke-width: 5px;" x1="200" y1="10" x2="200" y2="390"></line>
+    <path style="stroke: rgb(0, 0, 0); fill: none; stroke-width: 5px;" d="M 190 30 L 200 10 L 210 30"></path>
+    <text style="font-size: 100px;" x="215" y="27" dx="12" dy="36">y</text>
+  </g>
+  <g>
+    <line style="fill: rgb(216, 216, 216); stroke: rgb(0, 0, 0); stroke-width: 5px;" x1="10" y1="200" x2="390" y2="200"></line>
+    <path style="stroke: rgb(0, 0, 0); fill: none; stroke-width: 5px; transform-box: fill-box; transform-origin: 50% 50%; transform: rotate(90deg);" d="M 370 210 L 380 190 L 390 210"></path>
+    <text style="font-size: 100px;" x="375" y="188" dx="-39" dy="-6">x</text>
+  </g>
+  <g id="force" style="transform-origin: 200px 200px;">
+    <path style="fill: none; stroke: rgb(255, 0, 0); stroke-width: 10px; transform-box: fill-box; transform-origin: 50% 50%; transform: rotate(180deg);" d="M 180 190 L 199 150 L 220 190"></path>
+    <path style="stroke-width: 10px; stroke: rgb(255, 0, 0); fill: none; transform-box: fill-box; transform-origin: 50% 50%;" d="M 200 180 L 200 80"></path>
+    <text style="fill: rgb(255, 0, 0); font-size: 100px; white-space: pre;" x="265" y="180" dx="-39" dy="-6">F</text>
+  </g>
+</svg>
