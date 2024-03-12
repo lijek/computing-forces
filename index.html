@@ -37,7 +37,7 @@
 
     function calculateComponentForces(force, angle = 90) {
       const force_x = force * Math.cos(rad(angle));
-      const force_y = force * Math.sin(rad(angle));
+      const force_y = force * Math.sin(rad(angle)) * -1;
 
       return { x: force_x, y: force_y };
     }
