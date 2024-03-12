@@ -115,7 +115,12 @@
     }
 
     // sprowadź macierz do postaci schodkowej
+    let transformMatrixToTriangularForm_debug_log = true;
     function transformMatrixToTriangularForm(matrix) {
+      function debugLog(...data){
+        if(transformMatrixToTriangularForm_debug_log)
+          console.log(...data);
+      }
       matrix = copy2DArray(matrix);
       for (let i = 0; i < matrix.length; i++) {
         let column_offset = 0;
@@ -123,6 +128,7 @@
           if (matrix[i][column] == 0)
             column_offset += 1;
         }
+        debugLog("Triangulating:", matrix);
         matrix = eliminateElementFromMatrix(matrix, column_offset, i);
       }
       return matrix;
