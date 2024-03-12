@@ -571,22 +571,21 @@
 
       document.getElementById("rfc_calculate").addEventListener("click", e => {
         const solution = calculateReactionForces();
-        console.log(solution);
 
-        if(solution.x === -1){
-          solution.x = new Array(unknown_forces.length).fill(0);
+        if(typeof solution.x === "number"){
+          solution.x = new Array(unknown_forces.length).fill(NaN);
         }
 
-        if(solution.y === -1){
-          solution.y = new Array(unknown_forces.length).fill(0);
+        if(typeof solution.y === "number"){
+          solution.y = new Array(unknown_forces.length).fill(NaN);
         }
 
         unknown_forces.forEach((force_id, index) => {
           let force = forces[force_id];
           const force_x = solution.x[index];
           const force_y = solution.y[index];
-          document.getElementById(`rfc_${force.name}_x`).textContent = force_x.toFixed(2);
-          document.getElementById(`rfc_${force.name}_y`).textContent = force_y.toFixed(2);
+          document.getElementById(`rfc_${force.name}_x`).textContent = (force_x ?? NaN).toFixed(2);
+          document.getElementById(`rfc_${force.name}_y`).textContent = (force_y ?? NaN).toFixed(2);
         });
       });
 
