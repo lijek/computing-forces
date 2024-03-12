@@ -37,6 +37,16 @@
     .single-input-frame {
       margin: 0.3em
     }
+
+    .inline-grid {
+      display: inline-grid;
+    }
+
+    #rfc_button_grid {
+      grid-template-columns: auto auto;
+      gap: 0.1em;
+      vertical-align: top;
+    }
   </style>
   <script>
     function rad(angle) {
@@ -320,19 +330,24 @@
         <input id="rfc_json_get" type="button" value="Przetwórz na JSON">
       </div>
     </details>
-    <div class="inputs-frame">
+    <div>
+      <div class="inputs-frame inline">
       <b>Dane:</b>
       <div class="single-input-frame">Nazwa: F<sub><input type="text" id="rfc_name" value="1"></sub></div>
       <div class="single-input-frame">Wartość siły: <input type="number" id="rfc_force" value="100">&nbsp;N</div>
       <div class="single-input-frame">Kąt do osi X: <input type="number" id="rfc_angle" min="0" max="360" step="1" value="90">&nbsp;&deg;</div>
       <div class="single-input-frame">Odległość: <input type="number" id="rfc_distance" value="1">&nbsp;m</div>
     </div>
+      <div class="inputs-frame inline-grid" id="rfc_button_grid">
     <input id="rfc_add_force" type="button" value="Dodaj siłę">
     <input id="rfc_add_support" type="button" value="Dodaj podporę">
-    <input id="rfc_add_moving_support" type="button" value="Dodaj ruchomą podporę">
+        <input id="rfc_add_moving_support_x" type="button" value="Dodaj ruchomą podporę (w osi X)">
+        <input id="rfc_add_moving_support_y" type="button" value="Dodaj ruchomą podporę (w osi Y)">
     <input type="button" value="Podaj wzory">
     <input id="rfc_calculate" type="button" value="Oblicz">
     <input id="rfc_clear" type="button" value="Wyczyść wszystko">
+      </div>
+    </div>
     <table>
       <tr id="rfc_force_names">
         <th>Siła</th>
@@ -506,12 +521,35 @@
         addForceToTable(forces.at(-1));
       });
 
+      document.getElementById("rfc_add_moving_support_x").addEventListener("click", e => {
+        const name = "ABCDEFGHIJKLMNOPRSTQWXYZ"[unknown_forces_count - 1];
+        const input_distance = document.getElementById("rfc_distance");
+        const distance = input_distance.value;
+
+        addForce(name, "unknown", "???", "???", distance, false, true);
+        addForceToTable(forces.at(-1));
+      });
+
+      document.getElementById("rfc_add_moving_support_y").addEventListener("click", e => {
+        const name = "ABCDEFGHIJKLMNOPRSTQWXYZ"[unknown_forces_count - 1];
+        const input_distance = document.getElementById("rfc_distance");
+        const distance = input_distance.value;
+
+        addForce(name, "unknown", "???", "???", distance, true, false);
+        addForceToTable(forces.at(-1));
+      });
+
       let generateForceEquationSystem_debug_log = false;
       function generateForceEquationSystem(){
         function debugLog(...data){
           if(generateForceEquationSystem_debug_log)
             console.log(...data);
         }
+
+        function getUnknownForceIndex(force){
+          return unknown_forces.indexOf(forces.indexOf(force));
+        }
+
         let unknowns_y_matrix = [];
         let known_y = [0];
 
@@ -524,6 +562,15 @@
           if(force.type === "known"){
             known_y[0] -= force.components.y;
             known_x[0] -= force.components.x;
+          }else if(force.type === "unknown"){
+            const unknown_index = getUnknownForceIndex(force);
+            if(!force.components.x){
+              unknowns_x_matrix[0][unknown_index] = 0;
+            }
+
+            if(!force.components.y){
+              unknowns_y_matrix[0][unknown_index] = 0;
+            }
           }
         });
 
@@ -547,9 +594,9 @@
               torque_y += force.components.y * distance;
               torque_x += force.components.x * distance;
             }else if(force.type === "unknown"){
-              const unknown_index = unknown_forces.indexOf(forces.indexOf(force));
-              unknown_y[unknown_index] = distance * -1;
-              unknown_x[unknown_index] = distance * -1;
+              const unknown_index = getUnknownForceIndex(force);
+              unknown_y[unknown_index] = force.components.y ? distance * -1 : 0;
+              unknown_x[unknown_index] = force.components.x ? distance * -1 : 0;
             }
             distance += parseFloat(force.distance);
             debugLog(force.type, force.name, "d=", distance, "torqueY=", force.components.y * distance, "torqueX=", force.components.x * distance);
@@ -563,9 +610,9 @@
               torque_y += force.components.y * distance * -1;
               torque_x += force.components.x * distance * -1;
             }else if(force.type === "unknown"){
-              const unknown_index = unknown_forces.indexOf(forces.indexOf(force));
-              unknown_y[unknown_index] = distance;
-              unknown_x[unknown_index] = distance;
+              const unknown_index = getUnknownForceIndex(force);
+              unknown_y[unknown_index] = force.components.y ? distance : 0;
+              unknown_x[unknown_index] = force.components.x ? distance : 0;
             }
             debugLog(force.type, force.name, "d=", distance, "torqueY=", force.components.y * distance, "torqueX=", force.components.x * distance);
           });
