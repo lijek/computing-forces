@@ -363,61 +363,93 @@
       let known_forces_count = 1;
       let unknown_forces_count = 1;
 
-      function addForceToTable(name, type, force, angle, distance){
-        if(type === "unknown"){
-          force = "???";
-          angle = "???";
-        }
+      function addForceToTable(force){
+        const force_sign = force.type === "known" ? "F" : "R";
 
         const name_data = document.createElement("td");
-        name_data.innerHTML = `${type === "known" ? "F" : "R"}<sub>${name}</sub>`;
+        name_data.innerHTML = `${force_sign}<sub>${force.name}</sub>`;
         document.getElementById("rfc_force_names").append(name_data);
 
         const force_data = document.createElement("td");
-        force_data.innerHTML = `<span id="rfc_${name}_force">${force}</span>N`;
+        force_data.innerHTML = `<span id="rfc_${force.name}_force">${force.force}</span>N`;
         document.getElementById("rfc_forces").append(force_data);
 
         const angle_data = document.createElement("td");
-        angle_data.innerHTML = `<span id="rfc_${name}_angle">${angle}</span>&deg;`;
+        angle_data.innerHTML = `<span id="rfc_${force.name}_angle">${force.angle}</span>&deg;`;
         document.getElementById("rfc_angles").append(angle_data);
 
         const distance_data = document.createElement("td");
-        distance_data.innerHTML = `${distance}m`;
+        distance_data.innerHTML = `${force.distance}m`;
         document.getElementById("rfc_distances").append(distance_data);
 
-        if(type === "known"){
-          const components = calculateComponentForces(force, angle);
+        if(force.type === "known"){
+          const components = calculateComponentForces(force.force, force.angle);
 
           const components_data = document.createElement("td");
-          components_data.innerHTML = `F<sub>${name}x</sub> = ${components.x.toFixed(2)}<br>`
-            + `F<sub>${name}y</sub> = ${components.y.toFixed(2)}`;
+          components_data.innerHTML = `F<sub>${force.name}x</sub> = ${components.x.toFixed(2)}<br>`
+            + `F<sub>${force.name}y</sub> = ${components.y.toFixed(2)}`;
           document.getElementById("rfc_component_forces").append(components_data);
-        }else if(type === "unknown"){
+        }else if(force.type === "unknown"){
           const components_data = document.createElement("td");
-          components_data.innerHTML = `R<sub>${name}x</sub> = <span id="rfc_${name}_x">???</span><br>`
-            + `R<sub>${name}y</sub> = <span id="rfc_${name}_y">???</span>`;
+          components_data.innerHTML = `R<sub>${force.name}x</sub> = <span id="rfc_${force.name}_x">???</span><br>`
+            + `R<sub>${force.name}y</sub> = <span id="rfc_${force.name}_y">???</span>`;
           document.getElementById("rfc_component_forces").append(components_data);
         }
       }
 
-      function addForcesFromJSON(){
-        const JSON_forces = JSON.parse(document.getElementById("rfc_json_input").value);
+      function addForce(name = "kek", type = "unknown", force = 0, angle = 90, distance = 1, x_component = true, y_component = true){
+        if(type === "known"){
+          const components = calculateComponentForces(force, angle);
 
-        forces = JSON_forces;
+          forces.push({
+            name: name,
+            type: "known",
+            force: force,
+            angle: angle,
+            distance: distance,
+            components: components
+          });
+
+          known_forces_count += 1;
+        }else if(type === "unknown"){
+          force = "???";
+          angle = "???";
+
+          forces.push({
+            name: name,
+            type: "unknown",
+            force: force,
+            angle: angle,
+            distance: distance,
+            components: {
+              x: x_component,
+              y: y_component
+            }
+          });
+
+          unknown_forces.push(forces.length - 1);
+          unknown_forces_count += 1;
+        }
+      }
+
+      function addForcesFromJSON(data){
+        const JSON_forces = JSON.parse(data);
+
+        forces = [];
         unknown_forces = [];
-        known_forces = [];
 
         JSON_forces.forEach((force, i) => {
-          addForceToTable(force.name, force.type, force.force, force.angle, force.distance);
-          if(force.type === "unknown")
-            unknown_forces.push(i);
-          else if(force.type === "known")
-            known_forces.push(i);
+          addForce(force.name, force.type, force.force, force.angle, force.distance, force.components.x, force.components.y);
+          addForceToTable(force);
         });
       }
 
       document.getElementById("rfc_json_add").addEventListener("click", e => {
-        addForcesFromJSON();
+        addForcesFromJSON(document.getElementById("rfc_json_input").value);
+      });
+
+      document.getElementById("rfc_json_get").addEventListener("click", e => {
+        document.getElementById("rfc_json_input").value = JSON.stringify(forces);
       });
 
       document.getElementById("rfc_add_force").addEventListener("click", e => {
@@ -430,21 +462,8 @@
         const input_distance = document.getElementById("rfc_distance");
         const distance = input_distance.value;
 
-        addForceToTable(name, "known", force, angle, distance);
-
-        const components = calculateComponentForces(force, angle);
-
-        forces.push({
-          name: name,
-          type: "known",
-          force: force,
-          angle: angle,
-          distance: distance,
-          components: components
-        });
-
-        known_forces.push(forces.length - 1);
-        known_forces_count += 1;
+        addForce(name, "known", force, angle, distance);
+        addForceToTable(forces.at(-1));
         input_name.value = known_forces_count;
       });
 
@@ -453,20 +472,8 @@
         const input_distance = document.getElementById("rfc_distance");
         const distance = input_distance.value;
 
-        addForceToTable(name, "unknown", "???", "???", distance);
-
-        forces.push({
-          name: name,
-          type: "unknown",
-          distance: distance,
-          components: {
-            x: undefined,
-            y: undefined
-          }
-        });
-
-        unknown_forces.push(forces.length - 1);
-        unknown_forces_count += 1;
+        addForce(name, "unknown", "???", "???", distance, true, true);
+        addForceToTable(forces.at(-1));
       });
 
       function calculateReactionForces(){
