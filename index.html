@@ -156,40 +156,67 @@
       [-3 -1  2], [-11]    3x - y + 2z = -11
       [-2  1  2], [-3 ]   -2x + y + 2z = -3
     */
+    let solveSystemOfEquations_debug_log = true;
     function solveSystemOfEquations(coefficients_matrix, free_terms_matrix) {
+      function debugLog(...data){
+        if(solveSystemOfEquations_debug_log)
+          console.log(...data);
+      }
       let extended_matrix = copy2DArray(coefficients_matrix);
       extended_matrix.map((row, row_number) => {
         row.push(free_terms_matrix[row_number]);
       });
 
+      debugLog("Before triangulation:",
+        {
+          coefficients_matrix: JSON.parse(JSON.stringify(coefficients_matrix)),
+          extended_matrix: JSON.parse(JSON.stringify(extended_matrix))
+        }
+      )
+
       extended_matrix = transformMatrixToTriangularForm(extended_matrix);
       coefficients_matrix = transformMatrixToTriangularForm(copy2DArray(coefficients_matrix));
+
+      debugLog("After triangulation:",
+        {
+          coefficients_matrix: JSON.parse(JSON.stringify(coefficients_matrix)),
+          extended_matrix: JSON.parse(JSON.stringify(extended_matrix))
+        }
+      )
 
       //sprawdzanie, czy da się rozwiązać podany układ równań
       const coefficient_matrix_rank = triangularMatrixRank(coefficients_matrix);
       const extended_matrix_rank = triangularMatrixRank(extended_matrix);
       const unknowns_count = coefficients_matrix[0].length;
+      debugLog("coefficient_matrix_rank", coefficient_matrix_rank);
+      debugLog("extended_matrix_rank", extended_matrix_rank);
 
       if (coefficient_matrix_rank != extended_matrix_rank) {
-        console.error("Podany układ równań nie ma rozwiązań!");
+        debugLog("The system of equations doesn't have any solutions!");
         return -1;
       } else if (coefficient_matrix_rank < unknowns_count) {
-        console.log("Układ równań ma nieskończenie wiele rozwiązań.");
+        debugLog("The system of equations has infinite solutions.");
         return 1;
+      } else if(coefficient_matrix_rank == extended_matrix_rank){
+        debugLog("The system of equations has one solution.");
       }
 
-      //console.log(copy2DArray(extended_matrix));
       extended_matrix = extended_matrix.reverse();
       solutions = [];
 
       for (let row_number = 0; row_number < extended_matrix.length; row_number++) {
         let row = extended_matrix[row_number].reverse();
+        if(row.every(item => item === 0)){
+          continue;
+        }
         let number = row[0];
         for (let column = 0; column < row_number; column++) {
+          debugLog("Addition to number", row[column + 1], solutions[column])
           number += row[column + 1] * solutions[column];
         }
-        const multiplier = row[row_number + 1];
+        let multiplier = row[row_number + 1];
 
+        debugLog((-number) / multiplier, number, multiplier);
         solutions.push((-number) / multiplier);
       }
       solutions = solutions.map(x => -x);
