@@ -306,6 +306,7 @@
     <input id="rfc_add_moving_support" type="button" value="Dodaj ruchomą podporę">
     <input type="button" value="Podaj wzory">
     <input id="rfc_calculate" type="button" value="Oblicz">
+    <input id="rfc_clear" type="button" value="Wyczyść wszystko">
     <table>
       <tr id="rfc_force_names">
         <th>Siła</th>
@@ -587,6 +588,19 @@
           document.getElementById(`rfc_${force.name}_x`).textContent = (force_x ?? NaN).toFixed(2);
           document.getElementById(`rfc_${force.name}_y`).textContent = (force_y ?? NaN).toFixed(2);
         });
+      });
+
+      document.getElementById("rfc_clear").addEventListener("click", e => {
+        forces = [];
+        unknown_forces = [];
+        known_forces_count = 1;
+        unknown_forces_count = 1;
+
+        document.querySelectorAll("#rfc_force_names > td").forEach(element => element.remove());
+        document.querySelectorAll("#rfc_forces > td").forEach(element => element.remove());
+        document.querySelectorAll("#rfc_angles > td").forEach(element => element.remove());
+        document.querySelectorAll("#rfc_distances > td").forEach(element => element.remove());
+        document.querySelectorAll("#rfc_component_forces > td").forEach(element => element.remove());
       });
 
     </script>
