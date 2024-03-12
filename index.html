@@ -559,6 +559,21 @@
         };
       }
 
+      //test boży
+      function test_bozq(){
+        //test json forces
+        //const test_data = '[{"name":"A","type":"unknown","force":"???","angle":"???","distance":"1","components":{"x":true,"y":true}},{"name":"1","type":"known","force":"100","angle":"90","distance":"1","components":{"x":6.123233995736766e-15,"y":-100}},{"name":"B","type":"unknown","force":"???","angle":"???","distance":"1","components":{"x":true,"y":true}},{"name":"2","type":"known","force":"100","angle":"90","distance":"1","components":{"x":6.123233995736766e-15,"y":-100}},{"name":"C","type":"unknown","force":"???","angle":"???","distance":"1","components":{"x":true,"y":true}}]';
+        //test zadanie od kreta 1
+        const test_data = '[{"name":"A","type":"unknown","force":"???","angle":"???","distance":"2","components":{"x":true,"y":true}},{"name":"1","type":"known","force":"100","angle":"90","distance":"1","components":{"x":6.123233995736766e-15,"y":-100}},{"name":"2","type":"known","force":"200","angle":"270","distance":"2","components":{"x":-3.6739403974420595e-14,"y":200}},{"name":"3","type":"known","force":"300","angle":"90","distance":"3","components":{"x":1.8369701987210297e-14,"y":-300}},{"name":"B","type":"unknown","force":"???","angle":"???","distance":"0","components":{"x":true,"y":true}}]';
+        
+        addForcesFromJSON(test_data);
+        const test_force_equations = generateForceEquationSystem();
+        console.log(test_force_equations);
+        console.log(solveSystemOfEquations(test_force_equations.unknowns_y_matrix, test_force_equations.known_y));
+      }
+
+      //test_bozq();
+
       function calculateReactionForces(){
         const equations = generateForceEquationSystem();
         const calculated_y = solveSystemOfEquations(equations.unknowns_y_matrix, equations.known_y);
