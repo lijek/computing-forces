@@ -210,19 +210,23 @@
       }
       
       extended_matrix = extended_matrix.reverse();
-      solutions = [];
+      let solutions = [];
+      let zero_rows = 0;
 
       for (let row_number = 0; row_number < extended_matrix.length; row_number++) {
         let row = extended_matrix[row_number].reverse();
         if(row.every(item => item === 0)){
+          debugLog("ZEROS@", row_number);
+          zero_rows += 1;
           continue;
         }
         let number = row[0];
-        for (let column = 0; column < row_number; column++) {
-          debugLog("Addition to number", row[column + 1], solutions[column])
+        debugLog(solutions);
+        for (let column = 0; column < row_number - zero_rows; column++) {
+          debugLog("Addition to number", row[column + 1], solutions[column], "@column", column);
           number += row[column + 1] * solutions[column];
         }
-        let multiplier = row[row_number + 1];
+        let multiplier = row[row_number + 1 - zero_rows];
 
         debugLog((-number) / multiplier, number, multiplier);
         solutions.push((-number) / multiplier);
