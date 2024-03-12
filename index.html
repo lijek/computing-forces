@@ -29,6 +29,14 @@
       bottom: 0px;
       position: fixed;
     }
+
+    .inputs-frame {
+      margin: 0.5em;
+    }
+
+    .single-input-frame {
+      margin: 0.3em
+    }
   </style>
   <script>
     function rad(angle) {
@@ -200,7 +208,7 @@
       } else if(coefficient_matrix_rank == extended_matrix_rank){
         debugLog("The system of equations has one solution.");
       }
-
+      
       extended_matrix = extended_matrix.reverse();
       solutions = [];
 
@@ -286,6 +294,19 @@
   <div id="reactive_force_calculator">
     <h3>Kalkulator sił reakcyjnych</h3>
     <details>
+      <summary>Instrukcja obsługi</summary>
+      <h4>Ogółem</h4>
+      Wprowadź siły oraz podpory.
+      Kąt - kąt do osi X, tak jak w kalkulatorze sił składowych.
+      Wpisana odległość jest ustawiana również do podpór.
+      <h4>JSON</h4>
+      Zakładka ta służy do zapisywania wprowadzonych danych do formatu JSON.
+      "Dodaj z JSON" dodaje siły z pola tekstowego po lewej stronie.
+      "Przetwórz na JSON" konwertuje dany układ sił na format JSON.
+      <h4>Podawanie wzorów</h4>
+      No, kombinuję i może zadziałać poprawnie.
+    </details>
+    <details>
       <summary>JSON</summary>
       <div  class="inline">
         <textarea name="rfc_json_input" id="rfc_json_input" cols="30" rows="10">[{"name":"A","type":"unknown","distance":"2","components":{}},{"name":"1","type":"known","force":"100","angle":"90","distance":"1","components":{"x":6.123233995736766e-15,"y":100}},{"name":"2","type":"known","force":"200","angle":"270","distance":"2","components":{"x":-3.6739403974420595e-14,"y":-200}},{"name":"3","type":"known","force":"300","angle":"90","distance":"3","components":{"x":1.8369701987210297e-14,"y":300}},{"name":"B","type":"unknown","distance":"0","components":{}}]</textarea>
@@ -295,11 +316,12 @@
         <input id="rfc_json_get" type="button" value="Przetwórz na JSON">
       </div>
     </details>
-    <div>
-      Nazwa: F<sub><input type="text" id="rfc_name" value="1"></sub><br>
-      Wartość siły: <input type="number" id="rfc_force" value="100">N<br>
-      Kąt do osi X: <input type="number" id="rfc_angle" min="0" max="360" step="1" value="90">&deg;<br>
-      Odległość: <input type="number" id="rfc_distance" value="1">
+    <div class="inputs-frame">
+      <b>Dane:</b>
+      <div class="single-input-frame">Nazwa: F<sub><input type="text" id="rfc_name" value="1"></sub></div>
+      <div class="single-input-frame">Wartość siły: <input type="number" id="rfc_force" value="100">&nbsp;N</div>
+      <div class="single-input-frame">Kąt do osi X: <input type="number" id="rfc_angle" min="0" max="360" step="1" value="90">&nbsp;&deg;</div>
+      <div class="single-input-frame">Odległość: <input type="number" id="rfc_distance" value="1">&nbsp;m</div>
     </div>
     <input id="rfc_add_force" type="button" value="Dodaj siłę">
     <input id="rfc_add_support" type="button" value="Dodaj podporę">
@@ -318,7 +340,10 @@
         <th>Kąt do osi X</th>
       </tr>
       <tr id="rfc_distances">
-        <th>Odległość</th>
+        <th>
+          Odległość<br>
+          (do następnej siły)
+        </th>
       </tr>
       <tr id="rfc_component_forces">
         <th>Siły wypadkowe</th>
@@ -507,7 +532,7 @@
           const left_forces = forces.slice(0, force_id).reverse();
           const right_forces = forces.slice(force_id);
           right_forces.shift();
-          
+
           let torque_y = 0;
           let torque_x = 0;
 
@@ -578,7 +603,7 @@
         const equations = generateForceEquationSystem();
         const calculated_y = solveSystemOfEquations(equations.unknowns_y_matrix, equations.known_y);
         const calculated_x = solveSystemOfEquations(equations.unknowns_x_matrix, equations.known_x);
-        
+
         return {
           x: calculated_x,
           y: calculated_y,
