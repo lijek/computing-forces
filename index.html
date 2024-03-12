@@ -476,85 +476,96 @@
         addForceToTable(forces.at(-1));
       });
 
-      function calculateReactionForces(){
-        let unknowns_x_matrix = [];
+      let generateForceEquationSystem_debug_log = false;
+      function generateForceEquationSystem(){
+        function debugLog(...data){
+          if(generateForceEquationSystem_debug_log)
+            console.log(...data);
+        }
         let unknowns_y_matrix = [];
         let known_y = [0];
+
+        let unknowns_x_matrix = [];
         let known_x = [0];
-        //układanie równania pierwotnego: Σ Fiy = 0
+
         unknowns_y_matrix.push(new Array(unknown_forces.length).fill(1));
         unknowns_x_matrix.push(new Array(unknown_forces.length).fill(1));
         forces.forEach(force => {
           if(force.type === "known"){
             known_y[0] -= force.components.y;
-            known_x[0] -= force.components.x;
+            known_y[0] -= force.components.x;
           }
         });
-        //układanie równań z momentami Σ M(?) = 0
-        //dla osi Y
-        unknown_forces.slice(1).forEach((force_id, unknown_index) => {
+
+        unknown_forces.forEach((force_id, unknown_index) => {
           const unknown_force = forces[force_id];
+          debugLog("Układ równań z punktu", unknown_force.name);
           let unknown_y = new Array(unknown_forces.length).fill(0);
           let unknown_x = new Array(unknown_forces.length).fill(0);
-          console.log("Liczenie dla punktu ", unknown_force.name);
+
+          const left_forces = forces.slice(0, force_id).reverse();
+          const right_forces = forces.slice(force_id);
+          right_forces.shift();
           
-          // kierunek ->
-          let distance = parseFloat(unknown_force.distance);
           let torque_y = 0;
           let torque_x = 0;
-          for(let i = force_id - 1; i > -1; i--){
-            const force = forces[i];
-            distance += parseFloat(force.distance);
+
+          debugLog("prawo", right_forces);
+          let distance = parseFloat(unknown_force.distance);
+          right_forces.forEach(force => {
             if(force.type === "known"){
               torque_y += force.components.y * distance;
               torque_x += force.components.x * distance;
             }else if(force.type === "unknown"){
-              unknown_y[unknown_forces.indexOf(force_id)] = distance * -1;
-              unknown_x[unknown_forces.indexOf(force_id)] = distance * -1;
+              const unknown_index = unknown_forces.indexOf(forces.indexOf(force));
+              unknown_y[unknown_index] = distance * -1;
+              unknown_x[unknown_index] = distance * -1;
             }
-            
-            console.log(force.type, force.name, "d=", distance, "torqueY=", force.components.y * distance);
-            console.log(force.type, force.name, "d=", distance, "torqueX=", force.components.x * distance);
-          }
+            distance += parseFloat(force.distance);
+            debugLog(force.type, force.name, "d=", distance, "torqueY=", force.components.y * distance, "torqueX=", force.components.x * distance);
+          });
 
-          // <- kierunek
-          distance = parseFloat(unknown_force.distance);
-          for(let i = force_id + 1; i < forces.length; i++){
-            const force = forces[i];
+          debugLog("lewo", left_forces, distance);
+          distance = 0;
+          left_forces.forEach(force => {
+            distance += parseFloat(force.distance);
             if(force.type === "known"){
               torque_y += force.components.y * distance * -1;
               torque_x += force.components.x * distance * -1;
             }else if(force.type === "unknown"){
-              unknown_y[unknown_forces.indexOf(force_id)] = distance;
-              unknown_x[unknown_forces.indexOf(force_id)] = distance;
+              const unknown_index = unknown_forces.indexOf(forces.indexOf(force));
+              unknown_y[unknown_index] = distance;
+              unknown_y[unknown_index] = distance;
             }
-            
-            console.log(force.type, force.name, "d=", distance, "torqueY=", force.components.y * distance * -1);
-            console.log(force.type, force.name, "d=", distance, "torqueX=", force.components.x * distance * -1);
-            distance += parseFloat(force.distance);
-          }
-          console.log("overall torqueY=", torque_y);
-          console.log("overall torqueX=", torque_x);
+            debugLog(force.type, force.name, "d=", distance, "torqueY=", force.components.y * distance, "torqueX=", force.components.x * distance);
+          });
+
+          debugLog(torque_y, unknown_y);
           unknowns_y_matrix.push(unknown_y);
-          unknowns_x_matrix.push(unknown_x);
           known_y.push(torque_y);
+
+          debugLog(torque_x, unknown_x);
+          unknowns_x_matrix.push(unknown_x);
           known_x.push(torque_x);
+
         });
 
-        console.log(unknowns_y_matrix);
-        console.log(known_y);
-        console.log(unknowns_x_matrix);
-        console.log(known_x);
+        return {
+          unknowns_y_matrix: unknowns_y_matrix,
+          known_y: known_y,
+          unknowns_x_matrix: unknowns_x_matrix,
+          known_x: known_x
+        };
+      }
 
-        const calculated_y = solveSystemOfEquations(unknowns_y_matrix, known_y);
-        const calculated_x = solveSystemOfEquations(unknowns_x_matrix, known_x);
-
-        console.log(calculated_y);
-        console.log(calculated_x);
+      function calculateReactionForces(){
+        const equations = generateForceEquationSystem();
+        const calculated_y = solveSystemOfEquations(equations.unknowns_y_matrix, equations.known_y);
+        const calculated_x = solveSystemOfEquations(equations.unknowns_x_matrix, equations.known_x);
         
         return {
           x: calculated_x,
-          y: calculated_y
+          y: calculated_y,
         }
       }
 
