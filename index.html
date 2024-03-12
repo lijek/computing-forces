@@ -523,7 +523,7 @@
         forces.forEach(force => {
           if(force.type === "known"){
             known_y[0] -= force.components.y;
-            known_y[0] -= force.components.x;
+            known_x[0] -= force.components.x;
           }
         });
 
@@ -565,7 +565,7 @@
             }else if(force.type === "unknown"){
               const unknown_index = unknown_forces.indexOf(forces.indexOf(force));
               unknown_y[unknown_index] = distance;
-              unknown_y[unknown_index] = distance;
+              unknown_x[unknown_index] = distance;
             }
             debugLog(force.type, force.name, "d=", distance, "torqueY=", force.components.y * distance, "torqueX=", force.components.x * distance);
           });
