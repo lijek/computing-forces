@@ -408,6 +408,19 @@
       let known_forces_count = 1;
       let unknown_forces_count = 1;
 
+      function clearEverything(){
+        forces = [];
+        unknown_forces = [];
+        known_forces_count = 1;
+        unknown_forces_count = 1;
+
+        document.querySelectorAll("#rfc_force_names > td").forEach(element => element.remove());
+        document.querySelectorAll("#rfc_forces > td").forEach(element => element.remove());
+        document.querySelectorAll("#rfc_angles > td").forEach(element => element.remove());
+        document.querySelectorAll("#rfc_distances > td").forEach(element => element.remove());
+        document.querySelectorAll("#rfc_component_forces > td").forEach(element => element.remove());
+      }
+
       function addForceToTable(force){
         const force_sign = force.type === "known" ? "F" : "R";
 
@@ -682,16 +695,7 @@
       });
 
       document.getElementById("rfc_clear").addEventListener("click", e => {
-        forces = [];
-        unknown_forces = [];
-        known_forces_count = 1;
-        unknown_forces_count = 1;
-
-        document.querySelectorAll("#rfc_force_names > td").forEach(element => element.remove());
-        document.querySelectorAll("#rfc_forces > td").forEach(element => element.remove());
-        document.querySelectorAll("#rfc_angles > td").forEach(element => element.remove());
-        document.querySelectorAll("#rfc_distances > td").forEach(element => element.remove());
-        document.querySelectorAll("#rfc_component_forces > td").forEach(element => element.remove());
+        clearEverything();
       });
 
     </script>
