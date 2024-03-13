@@ -649,6 +649,40 @@
 
         });
 
+        unknowns_x_matrix = unknowns_x_matrix.filter((row) => !row.every(x => x === 0));
+        unknowns_y_matrix = unknowns_y_matrix.filter((row) => !row.every(x => x === 0));
+
+        let unknowns_x_matrix_zero_coefficients = [];
+        unknowns_x_matrix[0].forEach((column, index) => {
+          if(column === 0)
+            unknowns_x_matrix_zero_coefficients.push(index);
+        });
+
+        unknowns_x_matrix_zero_coefficients.forEach(index => {
+          unknowns_x_matrix.splice(index, 1);
+          unknowns_x_matrix = unknowns_x_matrix.map((row) => {
+            row.splice(index, 1);
+            return row;
+          });
+          known_x.splice(index, 1);
+        });
+
+        let unknowns_y_matrix_zero_coefficients = [];
+        unknowns_y_matrix[0].forEach((column, index) => {
+          if(column === 0)
+            unknowns_y_matrix_zero_coefficients.push(index);
+        });
+        
+        unknowns_y_matrix_zero_coefficients.forEach(index => {
+          unknowns_y_matrix.splice(index, 1);
+          unknowns_y_matrix = unknowns_y_matrix.map((row) => {
+            row.splice(index, 1);
+            return row;
+          });
+          known_y.splice(index, 1);
+        });
+
+
         return {
           unknowns_y_matrix: unknowns_y_matrix,
           known_y: known_y,
@@ -694,13 +728,26 @@
           solution.y = new Array(unknown_forces.length).fill(NaN);
         }
 
-        unknown_forces.forEach((force_id, index) => {
-          let force = forces[force_id];
-          const force_x = solution.x[index];
-          const force_y = solution.y[index];
-          document.getElementById(`rfc_${force.name}_x`).textContent = (force_x ?? NaN).toFixed(2);
-          document.getElementById(`rfc_${force.name}_y`).textContent = (force_y ?? NaN).toFixed(2);
-        });
+        let x_offset = 0;
+        let y_offset = 0;
+        for(let i = x_offset = 0; i < unknown_forces.length; i++){
+          let force = forces[unknown_forces[i]];
+          if(force.components.x === false){
+            x_offset += 1;
+            document.getElementById(`rfc_${force.name}_x`).textContent = "n/d";
+          }
+          if(force.components.y === false){
+            y_offset += 1;
+            document.getElementById(`rfc_${force.name}_y`).textContent = "n/d";
+          }
+          
+          force = forces[unknown_forces[i + x_offset]];
+          if(force)
+            document.getElementById(`rfc_${force.name}_x`).textContent = (solution.x[i] ?? NaN).toFixed(2);
+          force = forces[unknown_forces[i + y_offset]];
+          if(force)
+            document.getElementById(`rfc_${force.name}_y`).textContent = (solution.y[i] ?? NaN).toFixed(2);
+        }
       });
 
       document.getElementById("rfc_clear").addEventListener("click", e => {
