@@ -53,9 +53,13 @@
       return angle * Math.PI / 180;
     }
 
+    function round(number, decimal_places = 2){
+      return Math.round((number + Number.EPSILON) * 10**decimal_places) / 10**decimal_places;
+    }
+
     function calculateComponentForces(force, angle = 90) {
-      const force_x = force * Math.cos(rad(angle));
-      const force_y = force * Math.sin(rad(angle)) * -1;
+      const force_x = round(force * Math.cos(rad(angle)));
+      const force_y = round(force * Math.sin(rad(angle)) * -1);
 
       return { x: force_x, y: force_y };
     }
@@ -125,7 +129,12 @@
         const multiplier = (-matrix[row_number][x]) / firstElement;
         debugLog("Eliminating", firstElement, "from", copy2DArray(matrix), "@row", row_number, "with m", multiplier);
         for (let column = x; column < matrix[0].length; column++) {
-          matrix[row_number][column] = (matrix[y][column] * multiplier) + matrix[row_number][column];
+          const number = (matrix[y][column] * multiplier) + matrix[row_number][column];
+          if(round(Math.abs(number)) > 0)
+            matrix[row_number][column] = number;
+          else{
+            matrix[row_number][column] = 0;
+          }
         }
       }
       debugLog("Final matrix:", copy2DArray(matrix));
